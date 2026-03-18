@@ -1,0 +1,716 @@
+import { useState, useEffect, useRef } from "react";
+
+/* ═══════════════════════════════════════════════════════════════
+   HERRMANN HAUSTECHNIK — V4
+   Firmenfarben: Grün + Blau (aus H+S Logo)
+   Premium Architecture Aesthetic · Fixed Layout Issues
+   ═══════════════════════════════════════════════════════════════ */
+
+const C = {
+  black: "#0B0E0D",
+  dark: "#111614",
+  darkCard: "#161B18",
+  darkBorder: "#1F2925",
+  warmWhite: "#F0F4F1",
+  cream: "#D5DDD8",
+  muted: "#7A8A80",
+  mutedLight: "#9BAA9F",
+  /* Firmenfarben — abgeleitet vom H+S Logo (grün/blau) */
+  green: "#2E9E5E",
+  greenLight: "#3DB872",
+  greenGlow: "rgba(46,158,94,0.15)",
+  greenSubtle: "rgba(46,158,94,0.08)",
+  blue: "#2575A8",
+  blueLight: "#3A8EBF",
+  white: "#FFFFFF",
+  whatsapp: "#25D366",
+  whatsappDark: "#1EBE5A",
+};
+
+const PHONE = "4917XXXXXXXX";
+const ff = { head: "'Cormorant Garamond', serif", body: "'Montserrat', sans-serif" };
+
+/* ── Scroll Reveal ── */
+function useReveal(threshold = 0.12) {
+  const ref = useRef(null);
+  const [vis, setVis] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.unobserve(el); } }, { threshold });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return [ref, vis];
+}
+
+function R({ children, delay = 0, dir = "up", style = {} }) {
+  const [ref, vis] = useReveal();
+  const t = { up: "translateY(40px)", left: "translateX(40px)", right: "translateX(-40px)", scale: "scale(0.96)" };
+  return (
+    <div ref={ref} style={{
+      ...style, opacity: vis ? 1 : 0,
+      transform: vis ? "none" : (t[dir] || t.up),
+      transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
+    }}>{children}</div>
+  );
+}
+
+/* ── Icons (Lucide-style SVG, 1.5px stroke) ── */
+const I = (d, { size = 22, color = "currentColor", fill = "none" } = {}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>{d}</svg>
+);
+const ico = {
+  flame: I(<path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/>),
+  sun: I(<><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></>),
+  drop: I(<><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0014 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 01-11.91 4.97"/></>),
+  zap: I(<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>),
+  wrench: I(<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>),
+  shower: I(<><path d="m4 4 2.5 2.5M13.5 6.5a4.95 4.95 0 00-6.364 6.364L10.5 16l3.364-3.364a4.95 4.95 0 000-6.364z"/><path d="m12 12 6 6m0 0 2 2m-2-2-2 2"/></>),
+  arrow: I(<><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>),
+  check: I(<><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="m9 11 3 3L22 4"/></>),
+  pin: I(<><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 01-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0116 0"/><circle cx="12" cy="10" r="3"/></>),
+  phone: I(<path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>),
+  mail: I(<><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7"/></>),
+  wa: I(<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>, { fill: "currentColor", color: "none" }),
+};
+
+const pages = [
+  { id: "home", label: "Start" }, { id: "leistungen", label: "Leistungen" },
+  { id: "ueber", label: "Über Uns" }, { id: "karriere", label: "Karriere" },
+  { id: "kontakt", label: "Kontakt" },
+];
+
+const services = [
+  { icon: "flame", title: "Wärmepumpen", sub: "Luft · Wasser · Erdwärme", desc: "Effizient geplant, fachgerecht installiert. Inklusive kompletter Förderantragstellung." },
+  { icon: "drop", title: "Heizungsbau", sub: "Neubau · Sanierung · Beratung", desc: "Die wirtschaftlichste Heizlösung für Ihr Gebäude — von der Planung bis zur Inbetriebnahme." },
+  { icon: "sun", title: "Solarthermie", sub: "Warmwasser · Heizung", desc: "Sonnenenergie nutzen für maximale Unabhängigkeit. Planung, Installation und Fördermittel." },
+  { icon: "shower", title: "Bad & Sanitär", sub: "Entwurf · Gestaltung · Montage", desc: "Vom ersten Entwurf bis zur Fertigstellung — moderne Badgestaltung aus Meisterhand." },
+  { icon: "zap", title: "Elektrotechnik", sub: "Smart Home · Sicherheit · PV", desc: "Elektroinstallation, intelligente Gebäudetechnik und Photovoltaik-Integration." },
+  { icon: "wrench", title: "Kundendienst", sub: "Wartung · Reparatur · Notdienst", desc: "Schnelle Reaktionszeit, feste Termine, zuverlässige Ausführung." },
+];
+
+const jobs = [
+  { title: "Anlagenmechaniker SHK", type: "Vollzeit", short: "Heizung, Sanitär & Klimatechnik", perks: ["Firmenwagen", "30 Tage Urlaub", "Weiterbildung", "Werkzeug gestellt"] },
+  { title: "Elektroniker", type: "Vollzeit", short: "Elektroinstallation & Smart Home", perks: ["Firmenwagen", "Flexible Zeiten", "Fortbildung", "Top-Ausrüstung"] },
+  { title: "Auszubildende/r SHK", type: "Ausbildung", short: "Starte deine Karriere bei zwei Meistern", perks: ["2 Meister als Ausbilder", "Praxisnah", "Übernahme möglich", "Starkes Team"] },
+];
+
+/* ── Section label reusable ── */
+function SLabel({ children }) {
+  return (
+    <div style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 600, letterSpacing: 4, textTransform: "uppercase", color: C.green, marginBottom: 16, display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ width: 40, height: 1.5, background: C.green, borderRadius: 1 }} />
+      {children}
+    </div>
+  );
+}
+
+/* ── Nav ── */
+function Nav({ active, go }) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
+  }, []);
+
+  return (
+    <nav style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+      background: scrolled ? `${C.black}F0` : "transparent",
+      backdropFilter: scrolled ? "blur(24px) saturate(1.3)" : "none",
+      borderBottom: scrolled ? `1px solid ${C.darkBorder}` : "1px solid transparent",
+      transition: "all 0.5s cubic-bezier(0.16,1,0.3,1)",
+    }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, padding: "0 32px" }}>
+        <button onClick={() => go("home")} aria-label="Startseite" style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "baseline", gap: 8 }}>
+          <span style={{ fontFamily: ff.head, fontSize: 24, fontWeight: 600, color: C.warmWhite, letterSpacing: "-0.02em" }}>Herrmann</span>
+          <span style={{ fontFamily: ff.body, fontSize: 9, fontWeight: 500, color: C.muted, letterSpacing: 3, textTransform: "uppercase" }}>Haustechnik</span>
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {pages.map(p => (
+            <button key={p.id} onClick={() => go(p.id)} style={{
+              background: "none", border: "none", cursor: "pointer",
+              padding: "10px 16px", fontFamily: ff.body, fontSize: 12, fontWeight: 500,
+              color: active === p.id ? C.warmWhite : C.muted,
+              transition: "color 0.2s ease", minHeight: 44, letterSpacing: 0.3,
+            }}
+              onMouseEnter={e => { if (active !== p.id) e.currentTarget.style.color = C.cream; }}
+              onMouseLeave={e => { if (active !== p.id) e.currentTarget.style.color = C.muted; }}
+            >{p.label}</button>
+          ))}
+          <div style={{ width: 1, height: 20, background: C.darkBorder, margin: "0 10px" }} />
+          <button onClick={() => go("kontakt")} style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: C.green, color: C.white, border: "none",
+            borderRadius: 8, padding: "10px 22px",
+            fontFamily: ff.body, fontSize: 12, fontWeight: 600,
+            cursor: "pointer", transition: "all 0.25s ease", minHeight: 44, letterSpacing: 0.3,
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = C.greenLight; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = C.green; e.currentTarget.style.transform = "none"; }}
+          >Anfragen</button>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+/* ── HOME ── */
+function Home({ go }) {
+  const [hov, setHov] = useState(-1);
+
+  return (
+    <div>
+      {/* HERO */}
+      <section style={{
+        position: "relative", minHeight: "100vh",
+        background: `linear-gradient(160deg, ${C.dark} 0%, ${C.black} 60%)`,
+        display: "flex", flexDirection: "column", justifyContent: "flex-end",
+        overflow: "hidden",
+      }}>
+        {/* Grid texture */}
+        <div style={{ position: "absolute", inset: 0, opacity: 0.02, backgroundImage: `linear-gradient(${C.warmWhite} 1px, transparent 1px), linear-gradient(90deg, ${C.warmWhite} 1px, transparent 1px)`, backgroundSize: "80px 80px" }} />
+
+        {/* Green accent line */}
+        <div style={{ position: "absolute", top: "-5%", right: "22%", width: 2, height: "130%", background: `linear-gradient(180deg, transparent, ${C.green}20, ${C.green}35, ${C.green}20, transparent)`, transform: "rotate(12deg)" }} />
+
+        {/* Main content */}
+        <div style={{ position: "relative", maxWidth: 1200, margin: "0 auto", padding: "160px 32px 120px", width: "100%", boxSizing: "border-box" }}>
+          <R delay={0.1}>
+            <SLabel>Meisterbetrieb · Rosenberg</SLabel>
+          </R>
+          <R delay={0.2}>
+            <h1 style={{ fontFamily: ff.head, fontSize: "clamp(48px, 6vw, 82px)", fontWeight: 500, color: C.warmWhite, lineHeight: 1.05, letterSpacing: "-0.03em", margin: "12px 0 0", maxWidth: 720 }}>
+              Zwei Meister.{"\n"}
+              <span style={{ fontStyle: "italic", color: C.green }}>Ein Versprechen.</span>
+            </h1>
+          </R>
+          <R delay={0.4}>
+            <p style={{ fontFamily: ff.body, fontSize: 16, fontWeight: 400, color: C.muted, lineHeight: 1.8, maxWidth: 460, margin: "36px 0 44px" }}>
+              Elektro- und Heizungsmeister unter einem Dach. Individuelle Planung, Meisterqualität und kompletter Fördermittel-Service.
+            </p>
+          </R>
+          <R delay={0.55}>
+            <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+              <button onClick={() => go("kontakt")} style={{
+                display: "inline-flex", alignItems: "center", gap: 10,
+                background: C.green, color: C.white, border: "none",
+                padding: "16px 34px", borderRadius: 8,
+                fontFamily: ff.body, fontSize: 13, fontWeight: 600,
+                cursor: "pointer", transition: "all 0.3s cubic-bezier(0.16,1,0.3,1)", minHeight: 52,
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.greenLight; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 12px 40px ${C.greenGlow}`; }}
+                onMouseLeave={e => { e.currentTarget.style.background = C.green; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
+              >Projekt besprechen {ico.arrow}</button>
+              <button onClick={() => go("leistungen")} style={{
+                background: "none", border: `1px solid ${C.warmWhite}18`, color: C.warmWhite,
+                padding: "16px 30px", borderRadius: 8,
+                fontFamily: ff.body, fontSize: 13, fontWeight: 500,
+                cursor: "pointer", transition: "all 0.3s ease", minHeight: 52,
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${C.warmWhite}40`; e.currentTarget.style.background = `${C.warmWhite}05`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.warmWhite}18`; e.currentTarget.style.background = "none"; }}
+              >Leistungen entdecken</button>
+            </div>
+          </R>
+        </div>
+
+        {/* Bottom bar */}
+        <div style={{ position: "relative", borderTop: `1px solid ${C.warmWhite}08`, background: `${C.black}90`, backdropFilter: "blur(16px)" }}>
+          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+            {[
+              { val: "20+", label: "Jahre Erfahrung" },
+              { val: "2", label: "Handwerksmeister" },
+              { val: "100 %", label: "Förder-Service" },
+              { val: "Top 7", label: "Auszeichnung 2024" },
+            ].map((s, i) => (
+              <R key={i} delay={0.7 + i * 0.08}>
+                <div style={{ padding: "22px 0", textAlign: "center", borderRight: i < 3 ? `1px solid ${C.warmWhite}06` : "none" }}>
+                  <div style={{ fontFamily: ff.head, fontSize: 26, fontWeight: 600, color: C.warmWhite, lineHeight: 1 }}>{s.val}</div>
+                  <div style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 500, color: C.muted, letterSpacing: 1.5, textTransform: "uppercase", marginTop: 5 }}>{s.label}</div>
+                </div>
+              </R>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* TEAM PHOTO — full width with overlay text */}
+      <section style={{ position: "relative", height: 480, overflow: "hidden" }}>
+        <img src="/mnt/user-data/outputs/team.jpg" alt="Das Team von Herrmann Haustechnik"
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%", display: "block" }} />
+        <div style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg, ${C.black}E0 0%, ${C.black}80 50%, transparent 100%)` }} />
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center" }}>
+          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", width: "100%", boxSizing: "border-box" }}>
+            <R>
+              <SLabel>Unser Team</SLabel>
+              <h2 style={{ fontFamily: ff.head, fontSize: 44, fontWeight: 500, color: C.warmWhite, lineHeight: 1.15, margin: "8px 0 16px", letterSpacing: "-0.02em" }}>
+                Fünf Fachleute.<br /><span style={{ fontStyle: "italic", color: C.green }}>Eine Mission.</span>
+              </h2>
+              <p style={{ fontFamily: ff.body, fontSize: 14, color: C.cream, lineHeight: 1.7, maxWidth: 380, margin: 0, opacity: 0.8 }}>
+                Sanitär · Heizung · Elektro — alles aus einer Hand. Jeder im Team bringt sein Können ein.
+              </p>
+            </R>
+          </div>
+        </div>
+      </section>
+
+      {/* SERVICES — grid */}
+      <section style={{ background: C.black, padding: "100px 32px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <R>
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 56, flexWrap: "wrap", gap: 20 }}>
+              <div>
+                <SLabel>Leistungen</SLabel>
+                <h2 style={{ fontFamily: ff.head, fontSize: 48, fontWeight: 500, color: C.warmWhite, lineHeight: 1.1, letterSpacing: "-0.02em", margin: "8px 0 0" }}>
+                  Alles aus <span style={{ fontStyle: "italic" }}>einer Hand.</span>
+                </h2>
+              </div>
+              <button onClick={() => go("leistungen")} style={{
+                background: "none", border: `1px solid ${C.warmWhite}12`, color: C.warmWhite,
+                padding: "11px 24px", borderRadius: 6,
+                fontFamily: ff.body, fontSize: 12, fontWeight: 500,
+                cursor: "pointer", transition: "all 0.2s ease", minHeight: 44,
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.color = C.green; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.warmWhite}12`; e.currentTarget.style.color = C.warmWhite; }}
+              >Alle Leistungen</button>
+            </div>
+          </R>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2 }}>
+            {services.map((s, i) => (
+              <R key={i} delay={0.05 + i * 0.06}>
+                <div
+                  onMouseEnter={() => setHov(i)} onMouseLeave={() => setHov(-1)}
+                  style={{
+                    background: hov === i ? C.darkCard : `${C.warmWhite}02`,
+                    padding: "40px 32px", cursor: "default",
+                    borderTop: hov === i ? `2px solid ${C.green}` : "2px solid transparent",
+                    transition: "all 0.35s cubic-bezier(0.16,1,0.3,1)",
+                    position: "relative", overflow: "hidden",
+                  }}
+                >
+                  <div style={{
+                    position: "absolute", top: 12, right: 16,
+                    fontFamily: ff.head, fontSize: 56, fontWeight: 300,
+                    color: hov === i ? `${C.green}10` : `${C.warmWhite}03`,
+                    lineHeight: 1, transition: "color 0.35s ease",
+                  }}>{String(i + 1).padStart(2, "0")}</div>
+
+                  <div style={{
+                    width: 42, height: 42, borderRadius: 10,
+                    background: hov === i ? C.greenSubtle : `${C.warmWhite}05`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    marginBottom: 24, transition: "background 0.3s ease",
+                    color: hov === i ? C.green : C.muted,
+                  }}>{ico[s.icon]}</div>
+
+                  <h3 style={{ fontFamily: ff.head, fontSize: 22, fontWeight: 600, color: C.warmWhite, margin: "0 0 4px" }}>{s.title}</h3>
+                  <div style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 500, color: C.muted, letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>{s.sub}</div>
+                  <p style={{ fontFamily: ff.body, fontSize: 13, color: C.mutedLight, lineHeight: 1.7, margin: 0, opacity: hov === i ? 1 : 0.7, transition: "opacity 0.3s ease" }}>{s.desc}</p>
+                </div>
+              </R>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FUHRPARK — Photo with overlay */}
+      <section style={{ position: "relative", height: 400, overflow: "hidden" }}>
+        <img src="/mnt/user-data/outputs/fuhrpark.jpg" alt="Fuhrpark und Betriebsgelände mit Solaranlage"
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 60%", display: "block" }} />
+        <div style={{ position: "absolute", inset: 0, background: `linear-gradient(0deg, ${C.black}E5 0%, ${C.black}60 50%, ${C.black}30 100%)` }} />
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0 }}>
+          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px 48px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 24 }}>
+            <R>
+              <h3 style={{ fontFamily: ff.head, fontSize: 32, fontWeight: 500, color: C.warmWhite, margin: "0 0 8px" }}>
+                4 Fahrzeuge. <span style={{ fontStyle: "italic", color: C.green }}>Eigene Solaranlage.</span>
+              </h3>
+              <p style={{ fontFamily: ff.body, fontSize: 13, color: C.muted, margin: 0 }}>Unser Betrieb in Rosenberg — bereit für Ihren nächsten Auftrag.</p>
+            </R>
+            <R delay={0.15}>
+              <button onClick={() => go("kontakt")} style={{
+                background: C.green, color: C.white, border: "none",
+                padding: "13px 28px", borderRadius: 8,
+                fontFamily: ff.body, fontSize: 13, fontWeight: 600,
+                cursor: "pointer", transition: "all 0.25s ease", minHeight: 48,
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.greenLight; }}
+                onMouseLeave={e => { e.currentTarget.style.background = C.green; }}
+              >Jetzt anfragen</button>
+            </R>
+          </div>
+        </div>
+      </section>
+
+      {/* KARRIERE CTA */}
+      <section style={{ background: C.darkCard, borderTop: `1px solid ${C.darkBorder}`, borderBottom: `1px solid ${C.darkBorder}` }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "80px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 48, flexWrap: "wrap" }}>
+          <R style={{ flex: 1, minWidth: 280 }}>
+            <SLabel>Karriere</SLabel>
+            <h2 style={{ fontFamily: ff.head, fontSize: 40, fontWeight: 500, color: C.warmWhite, lineHeight: 1.15, margin: "8px 0 12px" }}>
+              Werde Teil <span style={{ fontStyle: "italic" }}>unseres Teams.</span>
+            </h2>
+            <p style={{ fontFamily: ff.body, fontSize: 14, color: C.muted, lineHeight: 1.7, maxWidth: 400, margin: 0 }}>
+              30-Sekunden-Bewerbung per WhatsApp. Kein Anschreiben nötig.
+            </p>
+          </R>
+          <R delay={0.15}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <a href={`https://wa.me/${PHONE}?text=${encodeURIComponent("Hallo! Ich interessiere mich für eine Stelle bei Herrmann Haustechnik.")}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 10,
+                  background: C.whatsapp, color: "#fff",
+                  padding: "14px 28px", borderRadius: 8,
+                  fontFamily: ff.body, fontSize: 13, fontWeight: 600,
+                  textDecoration: "none", transition: "all 0.25s ease", minHeight: 48,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.whatsappDark; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = C.whatsapp; e.currentTarget.style.transform = "none"; }}
+              >{ico.wa} Per WhatsApp bewerben</a>
+              <button onClick={() => go("karriere")} style={{
+                background: "none", border: `1px solid ${C.warmWhite}15`, color: C.warmWhite,
+                padding: "14px 24px", borderRadius: 8, fontFamily: ff.body, fontSize: 13, fontWeight: 500,
+                cursor: "pointer", transition: "all 0.25s ease", minHeight: 48,
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${C.warmWhite}35`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.warmWhite}15`; }}
+              >Offene Stellen</button>
+            </div>
+          </R>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ── LEISTUNGEN ── */
+function Leistungen() {
+  const [open, setOpen] = useState(0);
+  return (
+    <section style={{ background: C.black, paddingTop: 72, minHeight: "100vh" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "88px 32px 100px" }}>
+        <R>
+          <SLabel>Unsere Leistungen</SLabel>
+          <h2 style={{ fontFamily: ff.head, fontSize: 52, fontWeight: 500, color: C.warmWhite, lineHeight: 1.1, letterSpacing: "-0.02em", margin: "8px 0 56px" }}>
+            Kompetenz unter <span style={{ fontStyle: "italic" }}>einem Dach.</span>
+          </h2>
+        </R>
+
+        {services.map((s, i) => (
+          <R key={i} delay={i * 0.04}>
+            <div onClick={() => setOpen(open === i ? -1 : i)} style={{ borderTop: `1px solid ${C.darkBorder}`, padding: "28px 0", cursor: "pointer" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+                <span style={{ fontFamily: ff.head, fontSize: 16, color: C.muted, fontWeight: 300, width: 36 }}>{String(i + 1).padStart(2, "0")}</span>
+                <h3 style={{
+                  flex: 1, fontFamily: ff.head,
+                  fontSize: open === i ? 34 : 26,
+                  fontWeight: 500, color: open === i ? C.warmWhite : C.mutedLight,
+                  transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)", margin: 0,
+                }}>{s.title}</h3>
+                <div style={{ color: open === i ? C.green : C.muted, transition: "color 0.3s ease" }}>{ico[s.icon]}</div>
+              </div>
+              <div style={{ overflow: "hidden", maxHeight: open === i ? 180 : 0, opacity: open === i ? 1 : 0, transition: "all 0.45s cubic-bezier(0.16,1,0.3,1)", marginLeft: 64 }}>
+                <p style={{ fontFamily: ff.body, fontSize: 14, color: C.muted, lineHeight: 1.8, margin: "14px 0 0", maxWidth: 520 }}>{s.desc}</p>
+                <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
+                  {s.sub.split(" · ").map((t, j) => (
+                    <span key={j} style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 600, color: C.green, letterSpacing: 0.5, padding: "5px 12px", borderRadius: 4, background: C.greenSubtle, border: `1px solid ${C.green}20` }}>{t}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </R>
+        ))}
+        <div style={{ borderTop: `1px solid ${C.darkBorder}` }} />
+
+        <R delay={0.15}>
+          <div style={{ marginTop: 72, padding: "48px 56px", background: C.darkCard, border: `1px solid ${C.darkBorder}`, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 40, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <div style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 600, letterSpacing: 3, textTransform: "uppercase", color: C.blue, marginBottom: 10 }}>Unser Steckenpferd</div>
+              <h3 style={{ fontFamily: ff.head, fontSize: 30, fontWeight: 500, color: C.warmWhite, margin: "0 0 10px" }}>Fördermittel-Service <span style={{ fontStyle: "italic" }}>inklusive.</span></h3>
+              <p style={{ fontFamily: ff.body, fontSize: 13, color: C.muted, lineHeight: 1.7, maxWidth: 440, margin: 0 }}>Wir übernehmen die komplette Antragstellung — damit Sie das Maximum an staatlicher Unterstützung erhalten.</p>
+            </div>
+            <button style={{ background: C.green, color: C.white, border: "none", padding: "14px 30px", borderRadius: 8, fontFamily: ff.body, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.25s ease", minHeight: 48, whiteSpace: "nowrap" }}
+              onMouseEnter={e => { e.currentTarget.style.background = C.greenLight; }}
+              onMouseLeave={e => { e.currentTarget.style.background = C.green; }}
+            >Förderung prüfen</button>
+          </div>
+        </R>
+      </div>
+    </section>
+  );
+}
+
+/* ── ÜBER UNS ── */
+function Ueber() {
+  return (
+    <section style={{ background: C.black, paddingTop: 72, minHeight: "100vh" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "88px 32px 100px" }}>
+        <R>
+          <SLabel>Über Uns</SLabel>
+          <h2 style={{ fontFamily: ff.head, fontSize: 52, fontWeight: 500, color: C.warmWhite, lineHeight: 1.1, margin: "8px 0 64px" }}>
+            Zwei Fachleute. <span style={{ fontStyle: "italic" }}>Eine Firma.</span>
+          </h2>
+        </R>
+
+        {/* Team photo */}
+        <R>
+          <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", marginBottom: 56, height: 360 }}>
+            <img src="/mnt/user-data/outputs/team.jpg" alt="Team Herrmann Haustechnik" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 25%", display: "block" }} />
+            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg, ${C.black}C0 0%, transparent 60%)` }} />
+            <div style={{ position: "absolute", bottom: 40, left: 40 }}>
+              <div style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 600, color: C.green, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>Das Team</div>
+              <div style={{ fontFamily: ff.head, fontSize: 28, fontWeight: 500, color: C.warmWhite }}>Sanitär · Heizung · Elektro</div>
+            </div>
+          </div>
+        </R>
+
+        {/* GFs */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, marginBottom: 64 }}>
+          {[
+            { name: "Jürgen Herrmann", role: "Geschäftsführer", spec: "Meister des Heizungs- und Sanitärhandwerks", i: "flame" },
+            { name: "Moritz Herrmann", role: "Geschäftsführer", spec: "Meister des Elektrohandwerks", i: "zap" },
+          ].map((p, idx) => (
+            <R key={idx} delay={idx * 0.12}>
+              <div style={{ background: `${C.warmWhite}03`, padding: "52px 40px", borderTop: `2px solid ${C.green}`, position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: 16, right: 20, fontFamily: ff.head, fontSize: 100, fontWeight: 300, color: `${C.warmWhite}03`, lineHeight: 1 }}>{String(idx + 1).padStart(2, "0")}</div>
+                <div style={{ color: C.green, marginBottom: 24 }}>{ico[p.i]}</div>
+                <h3 style={{ fontFamily: ff.head, fontSize: 28, fontWeight: 600, color: C.warmWhite, margin: "0 0 6px" }}>{p.name}</h3>
+                <div style={{ fontFamily: ff.body, fontSize: 11, fontWeight: 600, color: C.green, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 }}>{p.role}</div>
+                <div style={{ fontFamily: ff.body, fontSize: 14, color: C.muted, lineHeight: 1.5 }}>{p.spec}</div>
+              </div>
+            </R>
+          ))}
+        </div>
+
+        {/* Values */}
+        <R><h3 style={{ fontFamily: ff.head, fontSize: 32, fontWeight: 500, color: C.warmWhite, margin: "0 0 40px" }}>Unsere <span style={{ fontStyle: "italic" }}>Werte.</span></h3></R>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
+          {[
+            { t: "Individuelle Beratung", d: "Jedes Projekt ist einzigartig." },
+            { t: "Meisterqualität", d: "Höchste handwerkliche Standards." },
+            { t: "Termingenau", d: "Zuverlässig und transparent." },
+            { t: "Zukunftsorientiert", d: "Erneuerbare Energien und Nachhaltigkeit." },
+          ].map((v, i) => (
+            <R key={i} delay={0.08 + i * 0.08}>
+              <div style={{ background: `${C.warmWhite}02`, padding: "36px 28px", borderTop: `1px solid ${C.darkBorder}` }}>
+                <div style={{ fontFamily: ff.head, fontSize: 40, fontWeight: 300, color: `${C.green}18`, marginBottom: 16 }}>{String(i + 1).padStart(2, "0")}</div>
+                <h4 style={{ fontFamily: ff.head, fontSize: 18, fontWeight: 600, color: C.warmWhite, margin: "0 0 6px" }}>{v.t}</h4>
+                <p style={{ fontFamily: ff.body, fontSize: 13, color: C.muted, lineHeight: 1.6, margin: 0 }}>{v.d}</p>
+              </div>
+            </R>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── KARRIERE ── */
+function Karriere() {
+  return (
+    <section style={{ background: C.black, paddingTop: 72, minHeight: "100vh" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "88px 32px 100px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, marginBottom: 64, alignItems: "start" }}>
+          <R>
+            <SLabel>Karriere</SLabel>
+            <h2 style={{ fontFamily: ff.head, fontSize: 48, fontWeight: 500, color: C.warmWhite, lineHeight: 1.1, margin: "8px 0 0" }}>
+              Deine Zukunft bei <span style={{ fontStyle: "italic" }}>Herrmann.</span>
+            </h2>
+          </R>
+          <R delay={0.12}>
+            <div style={{ background: `${C.whatsapp}08`, border: `1px solid ${C.whatsapp}20`, borderRadius: 14, padding: "32px 36px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: C.whatsapp, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>{ico.wa}</div>
+                <div>
+                  <div style={{ fontFamily: ff.body, fontSize: 14, fontWeight: 600, color: C.warmWhite }}>30-Sekunden-Bewerbung</div>
+                  <div style={{ fontFamily: ff.body, fontSize: 12, color: C.muted }}>Kein Anschreiben nötig</div>
+                </div>
+              </div>
+              <a href={`https://wa.me/${PHONE}?text=${encodeURIComponent("Hallo! Ich interessiere mich für eine Stelle.")}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", boxSizing: "border-box", background: C.whatsapp, color: "#fff", padding: "13px 24px", borderRadius: 8, fontFamily: ff.body, fontSize: 14, fontWeight: 600, textDecoration: "none", transition: "all 0.25s ease", minHeight: 48 }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.whatsappDark; }}
+                onMouseLeave={e => { e.currentTarget.style.background = C.whatsapp; }}
+              >{ico.wa} Jetzt per WhatsApp bewerben</a>
+            </div>
+          </R>
+        </div>
+
+        {jobs.map((j, i) => (
+          <R key={i} delay={i * 0.06}>
+            <div style={{ borderTop: `1px solid ${C.darkBorder}`, padding: "36px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32, flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10, flexWrap: "wrap" }}>
+                  <h3 style={{ fontFamily: ff.head, fontSize: 26, fontWeight: 600, color: C.warmWhite, margin: 0 }}>{j.title} <span style={{ fontWeight: 300, color: C.muted }}>(m/w/d)</span></h3>
+                  <span style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase", color: j.type === "Ausbildung" ? C.blue : C.green, padding: "4px 10px", borderRadius: 4, background: j.type === "Ausbildung" ? `${C.blue}15` : C.greenSubtle }}>{j.type}</span>
+                </div>
+                <p style={{ fontFamily: ff.body, fontSize: 14, color: C.muted, lineHeight: 1.6, margin: "0 0 14px" }}>{j.short}</p>
+                <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+                  {j.perks.map((p, k) => (
+                    <span key={k} style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: ff.body, fontSize: 12, color: C.mutedLight, fontWeight: 500 }}>
+                      {ico.check} {p}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <a href={`https://wa.me/${PHONE}?text=${encodeURIComponent(`Hallo! Interesse an: ${j.title}`)}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, background: C.greenSubtle, border: `1px solid ${C.green}25`, padding: "11px 22px", borderRadius: 8, fontFamily: ff.body, fontSize: 13, fontWeight: 600, color: C.green, textDecoration: "none", transition: "all 0.25s ease", minHeight: 44 }}
+                onMouseEnter={e => { e.currentTarget.style.background = `${C.green}18`; }}
+                onMouseLeave={e => { e.currentTarget.style.background = C.greenSubtle; }}
+              >{ico.wa} Bewerben</a>
+            </div>
+          </R>
+        ))}
+        <div style={{ borderTop: `1px solid ${C.darkBorder}` }} />
+      </div>
+    </section>
+  );
+}
+
+/* ── KONTAKT ── */
+function Kontakt() {
+  return (
+    <section style={{ background: C.black, paddingTop: 72, minHeight: "100vh" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "88px 32px 100px" }}>
+        <R>
+          <SLabel>Kontakt</SLabel>
+          <h2 style={{ fontFamily: ff.head, fontSize: 52, fontWeight: 500, color: C.warmWhite, lineHeight: 1.1, margin: "8px 0 64px" }}>
+            Lassen Sie uns <span style={{ fontStyle: "italic" }}>sprechen.</span>
+          </h2>
+        </R>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: 2 }}>
+          <R>
+            <div style={{ background: `${C.warmWhite}03`, padding: "48px 40px" }}>
+              {[
+                { icon: ico.pin, label: "Adresse", val: "Schimmelhof 12\n73494 Rosenberg" },
+                { icon: ico.phone, label: "Telefon", val: "07361 / XXXXXXX" },
+                { icon: ico.mail, label: "E-Mail", val: "info@herrmann-haustechnik.de" },
+              ].map((c, i) => (
+                <div key={i} style={{ display: "flex", gap: 18, marginBottom: 32 }}>
+                  <div style={{ color: C.green, marginTop: 2, flexShrink: 0 }}>{c.icon}</div>
+                  <div>
+                    <div style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 600, color: C.muted, letterSpacing: 2, textTransform: "uppercase", marginBottom: 5 }}>{c.label}</div>
+                    <div style={{ fontFamily: ff.body, fontSize: 14, color: C.warmWhite, fontWeight: 500, whiteSpace: "pre-line", lineHeight: 1.5 }}>{c.val}</div>
+                  </div>
+                </div>
+              ))}
+              <div style={{ borderTop: `1px solid ${C.darkBorder}`, paddingTop: 28, marginTop: 4 }}>
+                <div style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 600, color: C.muted, letterSpacing: 2, textTransform: "uppercase", marginBottom: 14 }}>Schnellkontakt</div>
+                <a href={`https://wa.me/${PHONE}?text=${encodeURIComponent("Hallo, ich habe eine Frage.")}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", boxSizing: "border-box", background: C.whatsapp, color: "#fff", padding: "13px 20px", borderRadius: 8, fontFamily: ff.body, fontSize: 14, fontWeight: 600, textDecoration: "none", transition: "all 0.25s ease", minHeight: 48 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = C.whatsappDark; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = C.whatsapp; }}
+                >{ico.wa} Per WhatsApp schreiben</a>
+              </div>
+            </div>
+          </R>
+
+          <R delay={0.12}>
+            <div style={{ background: C.darkCard, padding: "48px 44px", borderLeft: `1px solid ${C.darkBorder}` }}>
+              <h3 style={{ fontFamily: ff.head, fontSize: 26, fontWeight: 500, color: C.warmWhite, margin: "0 0 32px" }}>Nachricht senden</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                {[{ id: "name", l: "Name", r: true }, { id: "email", l: "E-Mail", r: true }].map(f => (
+                  <div key={f.id}>
+                    <label htmlFor={f.id} style={{ display: "block", fontFamily: ff.body, fontSize: 10, fontWeight: 600, color: C.muted, letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>
+                      {f.l}{f.r && <span style={{ color: C.green }}> *</span>}
+                    </label>
+                    <input id={f.id} type="text" autoComplete={f.id} style={{
+                      width: "100%", padding: "13px 14px", boxSizing: "border-box",
+                      background: `${C.warmWhite}04`, border: `1px solid ${C.darkBorder}`,
+                      borderRadius: 8, color: C.warmWhite, fontFamily: ff.body, fontSize: 14, outline: "none",
+                      transition: "border-color 0.2s ease", minHeight: 48,
+                    }}
+                      onFocus={e => { e.currentTarget.style.borderColor = C.green; }}
+                      onBlur={e => { e.currentTarget.style.borderColor = C.darkBorder; }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label htmlFor="tel" style={{ display: "block", fontFamily: ff.body, fontSize: 10, fontWeight: 600, color: C.muted, letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>Telefon</label>
+                <input id="tel" type="tel" autoComplete="tel" style={{ width: "100%", padding: "13px 14px", boxSizing: "border-box", background: `${C.warmWhite}04`, border: `1px solid ${C.darkBorder}`, borderRadius: 8, color: C.warmWhite, fontFamily: ff.body, fontSize: 14, outline: "none", transition: "border-color 0.2s ease", minHeight: 48 }}
+                  onFocus={e => { e.currentTarget.style.borderColor = C.green; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = C.darkBorder; }}
+                />
+              </div>
+              <div style={{ marginBottom: 24 }}>
+                <label htmlFor="msg" style={{ display: "block", fontFamily: ff.body, fontSize: 10, fontWeight: 600, color: C.muted, letterSpacing: 1, textTransform: "uppercase", marginBottom: 7 }}>Nachricht<span style={{ color: C.green }}> *</span></label>
+                <textarea id="msg" rows={5} style={{ width: "100%", padding: "13px 14px", boxSizing: "border-box", background: `${C.warmWhite}04`, border: `1px solid ${C.darkBorder}`, borderRadius: 8, color: C.warmWhite, fontFamily: ff.body, fontSize: 14, outline: "none", resize: "vertical", transition: "border-color 0.2s ease" }}
+                  onFocus={e => { e.currentTarget.style.borderColor = C.green; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = C.darkBorder; }}
+                />
+              </div>
+              <button style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: C.green, color: C.white, border: "none", padding: "15px", borderRadius: 8, fontFamily: ff.body, fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.25s ease", minHeight: 52 }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.greenLight; }}
+                onMouseLeave={e => { e.currentTarget.style.background = C.green; }}
+              >Nachricht senden {ico.arrow}</button>
+            </div>
+          </R>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── FOOTER ── */
+function Footer({ go }) {
+  return (
+    <footer style={{ background: C.dark, borderTop: `1px solid ${C.darkBorder}` }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "56px 32px 28px", display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 40 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
+            <span style={{ fontFamily: ff.head, fontSize: 20, fontWeight: 600, color: C.warmWhite }}>Herrmann</span>
+            <span style={{ fontFamily: ff.body, fontSize: 8, fontWeight: 500, color: C.muted, letterSpacing: 2.5, textTransform: "uppercase" }}>Haustechnik</span>
+          </div>
+          <p style={{ fontFamily: ff.body, fontSize: 12, color: C.muted, lineHeight: 1.8, maxWidth: 260 }}>Meisterbetrieb für Heizung, Sanitär und Elektrotechnik in Rosenberg.</p>
+        </div>
+        <div>
+          <div style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 600, color: C.muted, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Seiten</div>
+          {pages.map(p => (
+            <div key={p.id} onClick={() => go(p.id)} tabIndex={0} role="link"
+              style={{ fontFamily: ff.body, fontSize: 13, color: `${C.warmWhite}55`, marginBottom: 10, cursor: "pointer", transition: "color 0.2s" }}
+              onMouseEnter={e => { e.currentTarget.style.color = C.warmWhite; }}
+              onMouseLeave={e => { e.currentTarget.style.color = `${C.warmWhite}55`; }}
+            >{p.label}</div>
+          ))}
+        </div>
+        <div>
+          <div style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 600, color: C.muted, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Kontakt</div>
+          <div style={{ fontFamily: ff.body, fontSize: 12, color: `${C.warmWhite}55`, lineHeight: 2 }}>Schimmelhof 12<br />73494 Rosenberg<br />07361 / XXXXXXX</div>
+        </div>
+        <div>
+          <div style={{ fontFamily: ff.body, fontSize: 10, fontWeight: 600, color: C.muted, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>Rechtliches</div>
+          {["Impressum", "Datenschutz", "AGB"].map(l => (
+            <div key={l} style={{ fontFamily: ff.body, fontSize: 13, color: `${C.warmWhite}55`, marginBottom: 10, cursor: "pointer" }}>{l}</div>
+          ))}
+        </div>
+      </div>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 32px", borderTop: `1px solid ${C.darkBorder}`, display: "flex", justifyContent: "space-between", fontFamily: ff.body, fontSize: 11, color: `${C.muted}80` }}>
+        <span>© 2026 Herrmann Haustechnik GmbH</span>
+        <span>Konzept & Umsetzung — LaneCore AI</span>
+      </div>
+    </footer>
+  );
+}
+
+/* ── APP ── */
+export default function App() {
+  const [page, setPage] = useState("home");
+  const go = (p) => { setPage(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); };
+  return (
+    <div style={{ background: C.black, minHeight: "100vh" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+      <Nav active={page} go={go} />
+      <main>{page === "home" && <Home go={go} />}{page === "leistungen" && <Leistungen />}{page === "ueber" && <Ueber />}{page === "karriere" && <Karriere />}{page === "kontakt" && <Kontakt />}</main>
+      <Footer go={go} />
+    </div>
+  );
+}
